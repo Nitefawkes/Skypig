@@ -77,6 +77,41 @@ CREATE TABLE IF NOT EXISTS propagation_data (
 -- Convert propagation data to hypertable
 SELECT create_hypertable('propagation_data', 'timestamp', if_not_exists => TRUE);
 
+-- SDR Receivers table (WebSDR directory)
+CREATE TABLE IF NOT EXISTS sdr_receivers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    callsign VARCHAR(20),
+    url TEXT NOT NULL UNIQUE,
+    type VARCHAR(50) DEFAULT 'kiwisdr' CHECK (type IN ('kiwisdr', 'websdr', 'openwebrx', 'other')),
+    location VARCHAR(255),
+    grid_square VARCHAR(10),
+    latitude DECIMAL(10, 6),
+    longitude DECIMAL(10, 6),
+    country VARCHAR(100),
+    bands TEXT[] DEFAULT ARRAY[]::TEXT[],
+    modes TEXT[] DEFAULT ARRAY[]::TEXT[],
+    antenna_info TEXT,
+    frequency_min DECIMAL(10, 6),
+    frequency_max DECIMAL(10, 6),
+    users_max INT,
+    status VARCHAR(50) DEFAULT 'online' CHECK (status IN ('online', 'offline', 'unknown')),
+    last_seen TIMESTAMP WITH TIME ZONE,
+    description TEXT,
+    avatar_url TEXT,
+    is_public BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- User favorite SDRs (many-to-many)
+CREATE TABLE IF NOT EXISTS user_favorite_sdrs (
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    sdr_id UUID REFERENCES sdr_receivers(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, sdr_id)
+);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_qsos_user_id ON qsos(user_id);
 CREATE INDEX IF NOT EXISTS idx_qsos_callsign ON qsos(callsign);
@@ -85,6 +120,11 @@ CREATE INDEX IF NOT EXISTS idx_qsos_mode ON qsos(mode);
 CREATE INDEX IF NOT EXISTS idx_qsos_qso_date ON qsos(qso_date);
 CREATE INDEX IF NOT EXISTS idx_users_callsign ON users(callsign);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_sdr_receivers_type ON sdr_receivers(type);
+CREATE INDEX IF NOT EXISTS idx_sdr_receivers_status ON sdr_receivers(status);
+CREATE INDEX IF NOT EXISTS idx_sdr_receivers_country ON sdr_receivers(country);
+CREATE INDEX IF NOT EXISTS idx_sdr_receivers_location ON sdr_receivers(location);
+CREATE INDEX IF NOT EXISTS idx_sdr_receivers_grid_square ON sdr_receivers(grid_square);
 
 -- Function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -103,6 +143,9 @@ CREATE TRIGGER update_qsos_updated_at BEFORE UPDATE ON qsos
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_user_settings_updated_at BEFORE UPDATE ON user_settings
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_sdr_receivers_updated_at BEFORE UPDATE ON sdr_receivers
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Seed a test user (development only)

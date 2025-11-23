@@ -4,7 +4,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func RegisterRoutes(v1 fiber.Router, qsoHandler *QSOHandler, adifHandler *ADIFHandler, propHandler *PropagationHandler) {
+func RegisterRoutes(v1 fiber.Router, qsoHandler *QSOHandler, adifHandler *ADIFHandler, propHandler *PropagationHandler, sdrHandler *SDRHandler) {
 	// Auth routes (placeholder for OAuth integration)
 	auth := v1.Group("/auth")
 	auth.Get("/login/qrz", func(c *fiber.Ctx) error {
@@ -33,6 +33,14 @@ func RegisterRoutes(v1 fiber.Router, qsoHandler *QSOHandler, adifHandler *ADIFHa
 	prop.Get("/current", propHandler.GetCurrent)
 	prop.Get("/bands", propHandler.GetBandConditions)
 	prop.Post("/refresh", propHandler.RefreshData)
+
+	// SDR routes (fully implemented)
+	sdr := v1.Group("/sdr")
+	sdr.Get("/", sdrHandler.List)
+	sdr.Get("/search", sdrHandler.Search)
+	sdr.Get("/stats", sdrHandler.GetStats)
+	sdr.Get("/:id", sdrHandler.GetByID)
+	sdr.Post("/refresh", sdrHandler.RefreshDirectory)
 
 	// User routes (placeholder)
 	user := v1.Group("/user")

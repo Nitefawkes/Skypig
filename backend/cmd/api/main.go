@@ -35,15 +35,18 @@ func main() {
 	// Initialize repositories
 	qsoRepo := repositories.NewQSORepository(db)
 	propRepo := repositories.NewPropagationRepository(db)
+	sdrRepo := repositories.NewSDRRepository(db)
 
 	// Initialize services
 	qsoService := services.NewQSOService(qsoRepo)
 	propService := services.NewPropagationService(propRepo)
+	sdrService := services.NewSDRService(sdrRepo)
 
 	// Initialize handlers
 	qsoHandler := handlers.NewQSOHandler(qsoService)
 	adifHandler := handlers.NewADIFHandler(qsoService)
 	propHandler := handlers.NewPropagationHandler(propService)
+	sdrHandler := handlers.NewSDRHandler(sdrService)
 
 	// Initialize Fiber app
 	app := fiber.New(fiber.Config{
@@ -69,7 +72,7 @@ func main() {
 
 	// API v1 routes
 	v1 := app.Group("/api/v1")
-	handlers.RegisterRoutes(v1, qsoHandler, adifHandler, propHandler)
+	handlers.RegisterRoutes(v1, qsoHandler, adifHandler, propHandler, sdrHandler)
 
 	// Fetch initial propagation data
 	go func() {
@@ -101,6 +104,27 @@ func main() {
 			log.Println("Cleaning up old propagation data...")
 			if err := propService.CleanupOldData(30); err != nil { // Keep 30 days
 				log.Printf("Warning: Failed to cleanup old data: %v", err)
+			}
+		}
+	}()
+
+	// Fetch initial SDR directory
+	go func() {
+		log.Println("Fetching initial SDR directory...")
+		if err := sdrService.RefreshDirectory(); err != nil {
+			log.Printf("Warning: Failed to fetch initial SDR directory: %v", err)
+		}
+	}()
+
+	// Start SDR directory refresh scheduler (every 6 hours)
+	go func() {
+		ticker := time.NewTicker(6 * time.Hour)
+		defer ticker.Stop()
+
+		for range ticker.C {
+			log.Println("Scheduled SDR directory refresh...")
+			if err := sdrService.RefreshDirectory(); err != nil {
+				log.Printf("Warning: Scheduled SDR refresh failed: %v", err)
 			}
 		}
 	}()
