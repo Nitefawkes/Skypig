@@ -4,7 +4,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func RegisterRoutes(v1 fiber.Router, qsoHandler *QSOHandler, adifHandler *ADIFHandler) {
+func RegisterRoutes(v1 fiber.Router, qsoHandler *QSOHandler, adifHandler *ADIFHandler, propHandler *PropagationHandler) {
 	// Auth routes (placeholder for OAuth integration)
 	auth := v1.Group("/auth")
 	auth.Get("/login/qrz", func(c *fiber.Ctx) error {
@@ -28,13 +28,11 @@ func RegisterRoutes(v1 fiber.Router, qsoHandler *QSOHandler, adifHandler *ADIFHa
 	qso.Post("/import/adif", adifHandler.Import)
 	qso.Get("/export/adif", adifHandler.Export)
 
-	// Propagation routes (placeholder)
+	// Propagation routes (fully implemented)
 	prop := v1.Group("/propagation")
-	prop.Get("/current", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{
-			"message": "Current propagation data - to be implemented",
-		})
-	})
+	prop.Get("/current", propHandler.GetCurrent)
+	prop.Get("/bands", propHandler.GetBandConditions)
+	prop.Post("/refresh", propHandler.RefreshData)
 
 	// User routes (placeholder)
 	user := v1.Group("/user")

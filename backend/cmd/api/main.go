@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -33,13 +34,16 @@ func main() {
 
 	// Initialize repositories
 	qsoRepo := repositories.NewQSORepository(db)
+	propRepo := repositories.NewPropagationRepository(db)
 
 	// Initialize services
 	qsoService := services.NewQSOService(qsoRepo)
+	propService := services.NewPropagationService(propRepo)
 
 	// Initialize handlers
 	qsoHandler := handlers.NewQSOHandler(qsoService)
 	adifHandler := handlers.NewADIFHandler(qsoService)
+	propHandler := handlers.NewPropagationHandler(propService)
 
 	// Initialize Fiber app
 	app := fiber.New(fiber.Config{
@@ -65,7 +69,41 @@ func main() {
 
 	// API v1 routes
 	v1 := app.Group("/api/v1")
-	handlers.RegisterRoutes(v1, qsoHandler, adifHandler)
+	handlers.RegisterRoutes(v1, qsoHandler, adifHandler, propHandler)
+
+	// Fetch initial propagation data
+	go func() {
+		log.Println("Fetching initial propagation data...")
+		if err := propService.FetchAndStore(); err != nil {
+			log.Printf("Warning: Failed to fetch initial propagation data: %v", err)
+		}
+	}()
+
+	// Start propagation data refresh scheduler (every 15 minutes)
+	go func() {
+		ticker := time.NewTicker(15 * time.Minute)
+		defer ticker.Stop()
+
+		for range ticker.C {
+			log.Println("Scheduled propagation data refresh...")
+			if err := propService.FetchAndStore(); err != nil {
+				log.Printf("Warning: Scheduled propagation refresh failed: %v", err)
+			}
+		}
+	}()
+
+	// Cleanup old propagation data daily
+	go func() {
+		ticker := time.NewTicker(24 * time.Hour)
+		defer ticker.Stop()
+
+		for range ticker.C {
+			log.Println("Cleaning up old propagation data...")
+			if err := propService.CleanupOldData(30); err != nil { // Keep 30 days
+				log.Printf("Warning: Failed to cleanup old data: %v", err)
+			}
+		}
+	}()
 
 	// Start server
 	port := os.Getenv("PORT")
