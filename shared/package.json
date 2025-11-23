@@ -1,0 +1,10 @@
+{
+	"name": "@hamradio-cloud/shared",
+	"version": "0.0.1",
+	"type": "module",
+	"main": "./types/index.ts",
+	"types": "./types/index.ts",
+	"exports": {
+		".": "./types/index.ts"
+	}
+}
