@@ -40,9 +40,11 @@ func main() {
 
 	// Initialize services
 	qsoService := services.NewQSOService(qsoRepo, userRepo)
+	adifService := services.NewADIFService(qsoRepo, userRepo, qsoService)
 
 	// Initialize handlers
 	qsoHandler := handlers.NewQSOHandler(qsoService)
+	adifHandler := handlers.NewADIFHandler(adifService)
 
 	// Create Fiber app
 	app := fiber.New(fiber.Config{
@@ -96,6 +98,9 @@ func main() {
 	// QSO routes
 	qsos := v1.Group("/qsos")
 	qsos.Get("/stats", qsoHandler.GetStats)
+	qsos.Post("/import", adifHandler.ImportADIF)
+	qsos.Get("/export", adifHandler.ExportADIF)
+	qsos.Post("/validate", adifHandler.ValidateADIF)
 	qsos.Get("/", qsoHandler.ListQSOs)
 	qsos.Post("/", qsoHandler.CreateQSO)
 	qsos.Get("/:id", qsoHandler.GetQSO)
