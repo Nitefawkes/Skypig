@@ -1,0 +1,58 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: timescale/timescaledb:latest-pg16
+    container_name: hamradio-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: hamradio
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ../../backend
+      dockerfile: ../deployments/docker/Dockerfile.backend
+    container_name: hamradio-api
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/hamradio?sslmode=disable
+      PORT: 8080
+      ENVIRONMENT: development
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../../backend:/app
+    command: air
+
+  frontend:
+    build:
+      context: ../../frontend
+      dockerfile: ../deployments/docker/Dockerfile.frontend
+    container_name: hamradio-web
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://localhost:8080/api/v1
+    volumes:
+      - ../../frontend:/app
+      - /app/node_modules
+    command: npm run dev -- --host
+
+volumes:
+  postgres_data:
