@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import PropagationWidget from '$components/PropagationWidget.svelte';
+	import Navigation from '$components/Navigation.svelte';
 
 	let apiHealth = $state<{ status: string; service: string; version: string } | null>(null);
 	let loading = $state(true);
@@ -20,6 +21,8 @@
 		}
 	});
 </script>
+
+<Navigation />
 
 <div class="min-h-screen bg-gradient-to-br from-primary-50 to-secondary-50 p-4">
 	<div class="mx-auto max-w-7xl">
@@ -62,8 +65,11 @@
 			</div>
 		{/if}
 
-		<div class="mt-8 flex gap-4 justify-center">
-			<a href="/login" class="btn btn-primary">Sign In</a>
+		<div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+			<a href="/logbook" class="btn btn-primary">
+				📖 Try the Logbook
+			</a>
+			<a href="/login" class="btn btn-secondary">Sign In</a>
 			<a href="/register" class="btn btn-secondary">Get Started</a>
 		</div>
 
@@ -74,7 +80,7 @@
 	</div>
 
 	<!-- Propagation Widget -->
-	<div class="mx-auto max-w-7xl mt-8">
+	<div id="propagation" class="mx-auto max-w-7xl mt-8">
 		<PropagationWidget />
 	</div>
 </div>
