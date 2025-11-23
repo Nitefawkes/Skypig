@@ -43,20 +43,31 @@ Ham Radio Cloud is a subscription SaaS platform for amateur radio operators, pro
 
 ---
 
-### 🔄 Phase 2: Cloud Logbook Core (NEXT)
+### ✅ Phase 2: Cloud Logbook Core (COMPLETE - Core Features)
 
-**Target:** Core QSO logging functionality with ADIF import/export and LoTW sync.
+**Target:** Core QSO logging functionality with ADIF import/export.
 
-#### Pending Items:
+#### Completed Items:
+- [x] QSO CRUD backend API endpoints (List, Create, Update, Delete, Stats)
+- [x] Database connection pooling and repository layer
+- [x] ADIF 3.1.0 parser and exporter (pkg/adif)
+- [x] Manual QSO entry UI with comprehensive form
+- [x] QSO list view with advanced filtering (callsign, band, mode, dates)
+- [x] ADIF import/export UI with file upload/download
+- [x] Error handling and user feedback (success/error notifications)
+- [x] QSO statistics and counters
+
+#### Features Delivered:
+- **Backend:** Full QSO CRUD with filtering, pagination, bulk import
+- **ADIF:** Complete parser/exporter supporting all standard fields
+- **Frontend:** Responsive logbook with modals, filters, real-time updates
+- **Database:** TimescaleDB hypertables with optimized queries
+
+#### Still Pending (Future Phases):
 - [ ] OAuth (QRZ.com) authentication implementation
-- [ ] Manual QSO entry UI and backend API
-- [ ] ADIF import/export functionality
-- [ ] QSO list view with filtering (date, callsign, band, mode)
+- [ ] JWT middleware and protected routes
 - [ ] LoTW sync integration (one-way push)
-- [ ] Basic error handling and user feedback
-- [ ] QSO statistics and counters
-
-#### Estimated Timeline: 2-3 weeks
+- [ ] User tier enforcement (QSO limits)
 
 ---
 
