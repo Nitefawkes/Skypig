@@ -11,6 +11,8 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/nitefawkes/ham-radio-cloud/internal/config"
 	"github.com/nitefawkes/ham-radio-cloud/internal/handlers"
+	"github.com/nitefawkes/ham-radio-cloud/internal/repositories"
+	"github.com/nitefawkes/ham-radio-cloud/internal/services"
 )
 
 func main() {
@@ -21,6 +23,23 @@ func main() {
 
 	// Load configuration
 	cfg := config.Load()
+
+	// Connect to database
+	db, err := config.ConnectDB(cfg.DatabaseURL)
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+	defer db.Close()
+
+	// Initialize repositories
+	qsoRepo := repositories.NewQSORepository(db)
+
+	// Initialize services
+	qsoService := services.NewQSOService(qsoRepo)
+
+	// Initialize handlers
+	qsoHandler := handlers.NewQSOHandler(qsoService)
+	adifHandler := handlers.NewADIFHandler(qsoService)
 
 	// Initialize Fiber app
 	app := fiber.New(fiber.Config{
@@ -46,7 +65,7 @@ func main() {
 
 	// API v1 routes
 	v1 := app.Group("/api/v1")
-	handlers.RegisterRoutes(v1)
+	handlers.RegisterRoutes(v1, qsoHandler, adifHandler)
 
 	// Start server
 	port := os.Getenv("PORT")

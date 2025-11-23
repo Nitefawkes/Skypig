@@ -4,7 +4,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func RegisterRoutes(v1 fiber.Router) {
+func RegisterRoutes(v1 fiber.Router, qsoHandler *QSOHandler, adifHandler *ADIFHandler) {
 	// Auth routes (placeholder for OAuth integration)
 	auth := v1.Group("/auth")
 	auth.Get("/login/qrz", func(c *fiber.Ctx) error {
@@ -18,19 +18,15 @@ func RegisterRoutes(v1 fiber.Router) {
 		})
 	})
 
-	// QSO routes (placeholder)
+	// QSO routes (fully implemented)
 	qso := v1.Group("/qso")
-	qso.Get("/", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{
-			"message": "List QSOs - to be implemented",
-			"data":    []interface{}{},
-		})
-	})
-	qso.Post("/", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{
-			"message": "Create QSO - to be implemented",
-		})
-	})
+	qso.Get("/", qsoHandler.List)
+	qso.Post("/", qsoHandler.Create)
+	qso.Put("/:id", qsoHandler.Update)
+	qso.Delete("/:id", qsoHandler.Delete)
+	qso.Get("/stats", qsoHandler.GetStats)
+	qso.Post("/import/adif", adifHandler.Import)
+	qso.Get("/export/adif", adifHandler.Export)
 
 	// Propagation routes (placeholder)
 	prop := v1.Group("/propagation")
