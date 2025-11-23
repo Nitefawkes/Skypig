@@ -41,10 +41,12 @@ func main() {
 	// Initialize services
 	qsoService := services.NewQSOService(qsoRepo, userRepo)
 	adifService := services.NewADIFService(qsoRepo, userRepo, qsoService)
+	propagationService := services.NewPropagationService(true) // Use mock data for now
 
 	// Initialize handlers
 	qsoHandler := handlers.NewQSOHandler(qsoService)
 	adifHandler := handlers.NewADIFHandler(adifService)
+	propagationHandler := handlers.NewPropagationHandler(propagationService)
 
 	// Create Fiber app
 	app := fiber.New(fiber.Config{
@@ -89,7 +91,10 @@ func main() {
 				"/api/v1/qsos",
 				"/api/v1/qsos/:id",
 				"/api/v1/qsos/stats",
-				"/api/v1/propagation (coming soon)",
+				"/api/v1/qsos/import",
+				"/api/v1/qsos/export",
+				"/api/v1/propagation",
+				"/api/v1/propagation/forecast",
 				"/api/v1/sdr (coming soon)",
 			},
 		})
@@ -106,6 +111,11 @@ func main() {
 	qsos.Get("/:id", qsoHandler.GetQSO)
 	qsos.Put("/:id", qsoHandler.UpdateQSO)
 	qsos.Delete("/:id", qsoHandler.DeleteQSO)
+
+	// Propagation routes
+	propagation := v1.Group("/propagation")
+	propagation.Get("/", propagationHandler.GetCurrent)
+	propagation.Get("/forecast", propagationHandler.GetForecast)
 
 	// Start server
 	log.Printf("🚀 Server starting on port %s", cfg.Server.Port)

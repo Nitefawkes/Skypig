@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import PropagationWidget from '$components/PropagationWidget.svelte';
 
 	let apiHealth = $state<{ status: string; service: string; version: string } | null>(null);
 	let loading = $state(true);
@@ -20,8 +21,9 @@
 	});
 </script>
 
-<div class="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50">
-	<div class="card max-w-2xl text-center">
+<div class="min-h-screen bg-gradient-to-br from-primary-50 to-secondary-50 p-4">
+	<div class="mx-auto max-w-7xl">
+		<div class="card mb-8 max-w-2xl text-center mx-auto">
 		<h1 class="mb-4 text-5xl font-bold text-primary-700">
 			Ham-Radio Cloud
 		</h1>
@@ -66,8 +68,14 @@
 		</div>
 
 		<div class="mt-8 text-sm text-gray-500">
-			<p>Phase 1: Project Foundation & Core Infrastructure</p>
-			<p class="mt-1">MVP Target: 60-90 days</p>
+			<p>Phase 2: Core Features Complete</p>
+			<p class="mt-1">✅ QSO Logging | ✅ ADIF Import/Export | ✅ Propagation Data</p>
 		</div>
 	</div>
+
+	<!-- Propagation Widget -->
+	<div class="mx-auto max-w-7xl mt-8">
+		<PropagationWidget />
+	</div>
+</div>
 </div>
