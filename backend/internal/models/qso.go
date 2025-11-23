@@ -59,3 +59,10 @@ type QSOFilter struct {
 	Limit      int
 	Offset     int
 }
+
+// QSOStats represents QSO statistics for a user
+type QSOStats struct {
+	TotalQSOs     int `json:"total_qsos"`
+	QSOLimit      int `json:"qso_limit"`
+	RemainingQSOs int `json:"remaining_qsos"`
+}

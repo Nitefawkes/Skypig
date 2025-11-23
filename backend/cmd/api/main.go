@@ -9,6 +9,10 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/joho/godotenv"
+	"github.com/Nitefawkes/Skypig/backend/internal/config"
+	"github.com/Nitefawkes/Skypig/backend/internal/database"
+	"github.com/Nitefawkes/Skypig/backend/internal/handlers"
+	"github.com/Nitefawkes/Skypig/backend/internal/services"
 )
 
 func main() {
@@ -16,6 +20,29 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found, using environment variables")
 	}
+
+	// Load configuration
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
+
+	// Initialize database
+	db, err := database.New(&cfg.Database)
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+	defer db.Close()
+
+	// Initialize repositories
+	userRepo := database.NewUserRepository(db)
+	qsoRepo := database.NewQSORepository(db)
+
+	// Initialize services
+	qsoService := services.NewQSOService(qsoRepo, userRepo)
+
+	// Initialize handlers
+	qsoHandler := handlers.NewQSOHandler(qsoService)
 
 	// Create Fiber app
 	app := fiber.New(fiber.Config{
@@ -27,12 +54,21 @@ func main() {
 	app.Use(recover.New())
 	app.Use(logger.New())
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: getEnv("CORS_ORIGINS", "http://localhost:5173"),
+		AllowOrigins: cfg.Server.CORSOrigins,
 		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
 	}))
 
 	// Health check endpoint
 	app.Get("/health", func(c *fiber.Ctx) error {
+		// Check database health
+		if err := db.HealthCheck(); err != nil {
+			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
+				"status":  "error",
+				"service": "ham-radio-cloud-api",
+				"error":   "database unhealthy",
+			})
+		}
+
 		return c.JSON(fiber.Map{
 			"status":  "ok",
 			"service": "ham-radio-cloud-api",
@@ -49,16 +85,28 @@ func main() {
 			"endpoints": []string{
 				"/health",
 				"/api/v1/qsos",
-				"/api/v1/propagation",
-				"/api/v1/sdr",
+				"/api/v1/qsos/:id",
+				"/api/v1/qsos/stats",
+				"/api/v1/propagation (coming soon)",
+				"/api/v1/sdr (coming soon)",
 			},
 		})
 	})
 
+	// QSO routes
+	qsos := v1.Group("/qsos")
+	qsos.Get("/stats", qsoHandler.GetStats)
+	qsos.Get("/", qsoHandler.ListQSOs)
+	qsos.Post("/", qsoHandler.CreateQSO)
+	qsos.Get("/:id", qsoHandler.GetQSO)
+	qsos.Put("/:id", qsoHandler.UpdateQSO)
+	qsos.Delete("/:id", qsoHandler.DeleteQSO)
+
 	// Start server
-	port := getEnv("PORT", "8080")
-	log.Printf("🚀 Server starting on port %s", port)
-	if err := app.Listen(":" + port); err != nil {
+	log.Printf("🚀 Server starting on port %s", cfg.Server.Port)
+	log.Printf("📊 Environment: %s", cfg.Server.Environment)
+	log.Printf("🗄️  Database: %s:%d/%s", cfg.Database.Host, cfg.Database.Port, cfg.Database.DBName)
+	if err := app.Listen(":" + cfg.Server.Port); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 }
